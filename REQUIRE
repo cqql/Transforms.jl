@@ -1,0 +1,8 @@
+# Any julia version is okay
+julia 0.3
+
+# Use this for all our distribution needs
+Distributions 0.6
+
+# But we need an extension to train gaussian mixture models
+GaussianMixtures
