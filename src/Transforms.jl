@@ -1,55 +1,72 @@
 module Transforms
 
-import Distributions: Normal, MvNormal, MixtureModel, mean, var, cov, probs, components
+import GaussianMixtures: GMM
 
-const AnyNormal = Union(Normal, MvNormal)
+function resample(a, b, op)
+    n = 1000
+    as = rand(a, n)
+    bs = rand(b, n)
 
-for op in (:.+, :.-, :.*, :./)
-    f = symbol(string(op)[2:end])
+    cs = map(op, as, bs)
 
-    @eval begin
-        $op(a::Real, b::AnyNormal) = $f(a, b)
-        $op(a::Real, b::AnyNormal) = $f(a, b)
-    end
+    GMM(max(a.n, b.n), cs)
 end
 
-convert(::Type{MvNormal}, a::Normal) = MvNormal([mean(a)], [var(a)])
++(a::GMM, b::GMM) = resample(a, b, +)
+-(a::GMM, b::GMM) = resample(a, b, -)
+*(a::GMM, b::GMM) = resample(a, b, *)
+/(a::GMM, b::GMM) = resample(a, b, /)
 
-# One dimensional
+# import Distributions: Normal, MvNormal, MixtureModel, mean, var, cov, probs, components
 
--(a::Normal) = Normal(-mean(a), var(a))
+# const AnyNormal = Union(Normal, MvNormal)
 
-+(a::Normal, b::Real) = Normal(mean(a) + b, var(a))
-+(a::Real, b::Normal) = b + a
--(a::Normal, b::Real) = a + (-b)
--(a::Real, b::Normal) = a + (-b)
-*(a::Normal, b::Real) = Normal(mean(a) * b, var(a) * b^2)
-*(a::Real, b::Normal) = b * a
-/(a::Normal, b::Real) = a * (1 / b)
+# for op in (:.+, :.-, :.*, :./)
+#     f = symbol(string(op)[2:end])
 
-+(a::Normal, b::Normal) = Normal(mean(a) + mean(b), var(a) + var(b))
--(a::Normal, b::Normal) = a + (-b)
+#     @eval begin
+#         $op(a::Real, b::AnyNormal) = $f(a, b)
+#         $op(a::Real, b::AnyNormal) = $f(a, b)
+#     end
+# end
 
-# Multi dimensional
+# convert(::Type{MvNormal}, a::Normal) = MvNormal([mean(a)], [var(a)])
 
--(a::MvNormal) = MvNormal(-mean(a), var(a))
+# # One dimensional
 
-+(a::MvNormal, b::Vector{Real}) = MvNormal(mean(a) + b, cov(a))
-+(a::Vector{Real}, b::MvNormal) = b + a
--(a::MvNormal, b::Vector{Real}) = a + (-b)
--(a::Vector{Real}, b::MvNormal) = a + (-b)
-*(a::MvNormal, b::Real) = MvNormal(mean(a) * b, var(a) * b^2)
-*(a::Real, b::MvNormal) = b * a
-/(a::MvNormal, b::Real) = a * (1 / b)
+# -(a::Normal) = Normal(-mean(a), var(a))
 
-+(a::MvNormal, b::MvNormal) = MvNormal(mean(a) + mean(b), var(a) + var(b))
--(a::MvNormal, b::MvNormal) = a + (-b)
+# +(a::Normal, b::Real) = Normal(mean(a) + b, var(a))
+# +(a::Real, b::Normal) = b + a
+# -(a::Normal, b::Real) = a + (-b)
+# -(a::Real, b::Normal) = a + (-b)
+# *(a::Normal, b::Real) = Normal(mean(a) * b, var(a) * b^2)
+# *(a::Real, b::Normal) = b * a
+# /(a::Normal, b::Real) = a * (1 / b)
 
-# Mixtures
+# +(a::Normal, b::Normal) = Normal(mean(a) + mean(b), var(a) + var(b))
+# -(a::Normal, b::Normal) = a + (-b)
 
-+(a::Real, b::MixtureModel) = MixtureModel(a .+ components(b), probs(b))
-+(a::MixtureModel, b::Real) = b + a
-*(a::Real, b::MixtureModel) = MixtureModel(a .* components(b), probs(b))
-*(a::MixtureModel, b::Real) = b * a
+# # Multi dimensional
+
+# -(a::MvNormal) = MvNormal(-mean(a), var(a))
+
+# +(a::MvNormal, b::Vector{Real}) = MvNormal(mean(a) + b, cov(a))
+# +(a::Vector{Real}, b::MvNormal) = b + a
+# -(a::MvNormal, b::Vector{Real}) = a + (-b)
+# -(a::Vector{Real}, b::MvNormal) = a + (-b)
+# *(a::MvNormal, b::Real) = MvNormal(mean(a) * b, var(a) * b^2)
+# *(a::Real, b::MvNormal) = b * a
+# /(a::MvNormal, b::Real) = a * (1 / b)
+
+# +(a::MvNormal, b::MvNormal) = MvNormal(mean(a) + mean(b), var(a) + var(b))
+# -(a::MvNormal, b::MvNormal) = a + (-b)
+
+# # Mixtures
+
+# +(a::Real, b::MixtureModel) = MixtureModel(a .+ components(b), probs(b))
+# +(a::MixtureModel, b::Real) = b + a
+# *(a::Real, b::MixtureModel) = MixtureModel(a .* components(b), probs(b))
+# *(a::MixtureModel, b::Real) = b * a
 
 end
