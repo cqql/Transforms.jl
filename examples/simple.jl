@@ -17,7 +17,7 @@ c = a + b
 
 pygui(true)
 
-X = [-5:0.1:5]
+X = [-10:0.1:10]
 
 plot(X, pdf(mm(a), X), label="a")
 plot(X, pdf(mm(b), X), label="b")
