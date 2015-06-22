@@ -6,3 +6,6 @@ Distributions 0.6
 
 # But we need an extension to train gaussian mixture models
 GaussianMixtures
+
+# Integral approximation
+FastGaussQuadrature
