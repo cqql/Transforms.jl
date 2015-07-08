@@ -1,11 +1,7 @@
 module Transforms
 
-import Distributions: mean
-import GaussianMixtures: GMM
+import Distributions: Distribution, Univariate, Continuous, MixtureModel, components, probs, component_type, Categorical, mean
 import FastGaussQuadrature: gausshermite
-
-# Load some utility definitions
-include("utils.jl")
 
 """
 Exchangable algorithm for integral approximation
@@ -32,38 +28,50 @@ immutable GaussHermiteQuadrature <: IntegrationAlgorithm
     end
 end
 
+"The special case of mixture models, that we work with."
+typealias Mixture{T<:Distribution} MixtureModel{Univariate, Continuous, T}
+
 """
 A random variable to do computations with
 """
-immutable RandomVariable{T<:IntegrationAlgorithm}
-    distribution::GMM
+immutable RandomVariable{Component<:Distribution, T<:IntegrationAlgorithm}
+    distribution::Mixture{Component}
     alg::T
 
-    function RandomVariable(distribution::GMM, alg::T)
-        new(distribution)
+    function RandomVariable(distribution::Mixture{Component}, alg::T)
+        new(distribution, alg)
     end
 end
 
-function RandomVariable(distribution::GMM)
+"A convenience constructor, so you do not have to specify the types."
+function RandomVariable{
+    T<:Distribution,
+    S<:IntegrationAlgorithm}(distribution::Mixture{T}, alg::S)
+    RandomVariable{T, S}(distribution, alg)
+end
+
+"Construct a random variable with a default integration algorithm."
+function RandomVariable(distribution::Mixture)
     RandomVariable(distribution, GaussHermiteQuadrature(5))
 end
 
 function mean(x::RandomVariable)
-    d = x.distribution
-
-    sum(d.w .* d.μ)
+    mean(x.distribution)
 end
 
 function -(x::RandomVariable)
     d = x.distribution
 
-    RandomVariable(GMM(d.w, -d.μ, d.Σ))
+    RandomVariable(Mixture{component_type(d)}(map(-, components(d)), d.prior),
+                   x.alg)
 end
 
 function +(x::RandomVariable, y::Real)
     d = x.distribution
+    f = X -> X + y
 
-    RandomVariable(GMM(d.w, d.μ + y, d.Σ))
+    RandomVariable(Mixture{component_type(d)}(map(f, components(d)), d.prior),
+                   x.alg)
 end
 
 +(x::Real, y::RandomVariable) = y + x
@@ -75,8 +83,11 @@ function *(x::RandomVariable, y::Real)
         0
     else
         d = x.distribution
+        f = X -> X * y
 
-        RandomVariable(GMM(d.w, y * d.μ, y^2 * d.Σ))
+        RandomVariable(Mixture{component_type(d)}(map(f, components(d)),
+                                                  d.prior),
+                       x.alg)
     end
 end
 
@@ -87,13 +98,17 @@ function +(x::RandomVariable, y::RandomVariable)
     dx = x.distribution
     dy = y.distribution
 
-    w = vec(dx.w * dy.w')
-    μ = float(vec([dx.μ[i] + dy.μ[j] for i = 1:dx.n, j = 1:dy.n]))
-    Σ = float(vec([dx.Σ[i] + dy.Σ[j] for i = 1:dx.n, j = 1:dy.n]))
+    prior = vec(probs(dx) * probs(dy)')
+    cs = vec([i + j for i = components(dx), j = components(dy)])
 
-    RandomVariable(GMM(w, μ, Σ))
+    # The type of the resulting components
+    t = typeof(cs[1])
+
+    RandomVariable(Mixture{t}(cs, Categorical(prior)))
 end
 
 -(x::RandomVariable, y::RandomVariable) = x + (-y)
+
+include("components/normal.jl")
 
 end

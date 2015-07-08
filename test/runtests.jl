@@ -1,9 +1,11 @@
 using Base.Test
 
-using Transforms: RandomVariable
-using GaussianMixtures: GMM
+import Transforms: RandomVariable
+import Distributions: MixtureModel, Normal, mean
 
-x = RandomVariable(GMM([0.5, 0.5], [1., -4.], [2., 10.]))
+x = RandomVariable(MixtureModel([Normal(1., 2.),
+                                 Normal(-4., 10.)],
+                                [0.5, 0.5]))
 
 @test_approx_eq -1.5 mean(x)
 
@@ -18,7 +20,10 @@ x = RandomVariable(GMM([0.5, 0.5], [1., -4.], [2., 10.]))
 @test_approx_eq (10 * mean(x)) mean(x * 10)
 @test_approx_eq (mean(x) / 10) mean(x / 10)
 
-y = RandomVariable(GMM([0.2, 0.5, 0.3], [1., -4., 2.3], [2., 10., 0.3]))
+y = RandomVariable(MixtureModel([Normal(1., 2.),
+                                 Normal(-4., 10.),
+                                 Normal(2.3, 0.3)],
+                                [0.2, 0.5, 0.3]))
 
 @test_approx_eq (mean(x) + mean(y)) mean(x + y)
 @test_approx_eq (mean(x) - mean(y)) mean(x - y)
