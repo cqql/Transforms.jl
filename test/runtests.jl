@@ -27,3 +27,5 @@ y = RandomVariable(MixtureModel([Normal(1., 2.),
 
 @test_approx_eq (mean(x) + mean(y)) mean(x + y)
 @test_approx_eq (mean(x) - mean(y)) mean(x - y)
+
+@test_approx_eq (mean(x) * mean(y)) mean(x * y)

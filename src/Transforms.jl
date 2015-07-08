@@ -1,32 +1,11 @@
 module Transforms
 
 import Distributions: Distribution, Univariate, Continuous, MixtureModel, components, probs, component_type, Categorical, mean
-import FastGaussQuadrature: gausshermite
 
-"""
-Exchangable algorithm for integral approximation
-"""
-abstract IntegrationAlgorithm
+include("integration.jl")
+include("integration/gauss-hermite.jl")
 
-"""
-Parameters for Gauss-Hermite quadrature
-"""
-immutable GaussHermiteQuadrature <: IntegrationAlgorithm
-    # Number of points
-    n::Integer
-
-    # Evaluation points for the integrand
-    X::Vector{Float64}
-
-    # Weights for the weighted sum approximation
-    W::Vector{Float64}
-
-    function GaussHermiteQuadrature(n::Integer)
-        (X, W) = gausshermite(n)
-
-        new(n, X, W)
-    end
-end
+include("components/normal.jl")
 
 "The special case of mixture models, that we work with."
 typealias Mixture{T<:Distribution} MixtureModel{Univariate, Continuous, T}
@@ -109,6 +88,23 @@ end
 
 -(x::RandomVariable, y::RandomVariable) = x + (-y)
 
-include("components/normal.jl")
+function *(x::RandomVariable, y::RandomVariable)
+    dx = x.distribution
+    dy = y.distribution
+
+    # Weights if the components were not mixtures themselves
+    basicPrior = vec(probs(dx) * probs(dy)')
+
+    # Components approximated by mixtures
+    mixtures = vec([*(x.alg, i, j) for i = components(dx), j = components(dy)])
+
+    prior = vcat([basicPrior[i] * probs(mixtures[i]) for i = 1:length(mixtures)]...)
+    cs = vcat(map(components, mixtures)...)
+
+    # The type of the resulting components
+    t = typeof(cs[1])
+
+    RandomVariable(Mixture{t}(cs, Categorical(prior)))
+end
 
 end
