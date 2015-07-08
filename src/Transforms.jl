@@ -2,19 +2,50 @@ module Transforms
 
 import Distributions: mean
 import GaussianMixtures: GMM
+import FastGaussQuadrature: gausshermite
 
 # Load some utility definitions
 include("utils.jl")
 
 """
+Exchangable algorithm for integral approximation
+"""
+abstract IntegrationAlgorithm
+
+"""
+Parameters for Gauss-Hermite quadrature
+"""
+immutable GaussHermiteQuadrature <: IntegrationAlgorithm
+    # Number of points
+    n::Integer
+
+    # Evaluation points for the integrand
+    X::Vector{Float64}
+
+    # Weights for the weighted sum approximation
+    W::Vector{Float64}
+
+    function GaussHermiteQuadrature(n::Integer)
+        (X, W) = gausshermite(n)
+
+        new(n, X, W)
+    end
+end
+
+"""
 A random variable to do computations with
 """
-immutable RandomVariable
+immutable RandomVariable{T<:IntegrationAlgorithm}
     distribution::GMM
+    alg::T
 
-    function RandomVariable(distribution::GMM)
+    function RandomVariable(distribution::GMM, alg::T)
         new(distribution)
     end
+end
+
+function RandomVariable(distribution::GMM)
+    RandomVariable(distribution, GaussHermiteQuadrature(5))
 end
 
 function mean(x::RandomVariable)
