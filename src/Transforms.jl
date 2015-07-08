@@ -1,109 +1,55 @@
 module Transforms
 
-import GaussianMixtures: GMM, History
-import Distributions: Normal, mean
-import FastGaussQuadrature: gausshermite
+import Distributions: mean
+import GaussianMixtures: GMM
 
-# Functions for inspection of GMMs
-mean(a::GMM) = sum(a.w .* a.μ)
+# Load some utility definitions
+include("utils.jl")
 
-# Monadic operations
--(a::GMM) = GMM(a.weights, -a.μ, a.Σ, a.hist)
+"""
+A random variable to do computations with
+"""
+immutable RandomVariable
+    distribution::GMM
 
-# Diadic operations with scalars
-function +(a::GMM, b::Real)
-    history = vcat(a.hist, History(@sprintf("Add %f", b)))
-
-    GMM(a.weights, a.μ + b, a.Σ, a.hist)
-end
-
-+(a::Real, b::GMM) = b + a
--(a::GMM, b::Real) = a + (-b)
--(a::Real, b::GMM) = (-b) + a
-
-function *(a::GMM, b::Real)
-    if b == 0
-        0
-    else
-        history = vcat(a.hist, History(@sprintf("Multiply by %f", b)))
-
-        GMM(a.weights, b * a.μ, b^2 * a.Σ, history)
+    function RandomVariable(distribution::GMM)
+        new(distribution)
     end
 end
 
-*(a::Real, b::GMM) = b * a
+function mean(x::RandomVariable)
+    d = x.distribution
 
-# Diadic operations with two GMMs
-function +(a::GMM, b::GMM)
-    # Reshape a matrix into a 2-dimensional "vector"
-    rs = v -> reshape(v, (a.n * b.n, a.d))
-
-    weights = vec(a.w * b.w')
-    means = rs([a.μ[i] + b.μ[j] for i = 1:a.n, j = 1:b.n])
-    variances = rs([a.Σ[i][1] + b.Σ[j][1] for i = 1:a.n, j = 1:b.n])
-    history = vcat(a.hist, b.hist, History("Sum of two GMMs"))
-
-    GMM(weights, means, variances, history, a.nx + b.nx)
+    sum(d.w .* d.μ)
 end
 
--(a::GMM, b::GMM) = a + (-b)
+function -(x::RandomVariable)
+    d = x.distribution
 
-function *(a::GMM, b::GMM)
-    # Reshape a matrix into a 2-dimensional "vector"
-    rs = v -> reshape(v, (a.n * b.n, a.d))
-
-    gmms = [Normal(a.μ[i], a.Σ[i][1]) * Normal(b.μ[j], b.Σ[j][1])
-            for i = 1:a.n, j = 1:b.n]
-
-    weights = vcat(rs([a.w[i] * b.w[j] * gmms[i, j].w for i = 1:a.n, j = 1:b.n])...)
-    μ = vcat(rs([gmms[i, j].μ for i = 1:a.n, j = 1:b.n])...)
-    σ = vcat(rs([gmms[i, j].Σ for i = 1:a.n, j = 1:b.n])...)
-
-    history = vcat(a.hist, b.hist, History("Product of two GMMs"))
-
-    GMM(weights, μ, σ, history, a.nx + b.nx)
+    RandomVariable(GMM(d.w, -d.μ, d.Σ))
 end
 
-function /(a::GMM, b::GMM)
-    # Reshape a matrix into a 2-dimensional "vector"
-    rs = v -> reshape(v, (a.n * b.n, a.d))
+function +(x::RandomVariable, y::Real)
+    d = x.distribution
 
-    gmms = [Normal(a.μ[i], a.Σ[i][1]) / Normal(b.μ[j], b.Σ[j][1])
-            for i = 1:a.n, j = 1:b.n]
-
-    weights = vcat(rs([a.w[i] * b.w[j] * gmms[i, j].w for i = 1:a.n, j = 1:b.n])...)
-    μ = vcat(rs([gmms[i, j].μ for i = 1:a.n, j = 1:b.n])...)
-    σ = vcat(rs([gmms[i, j].Σ for i = 1:a.n, j = 1:b.n])...)
-
-    history = vcat(a.hist, b.hist, History("Product of two GMMs"))
-
-    GMM(weights, μ, σ, history, a.nx + b.nx)
+    RandomVariable(GMM(d.w, d.μ + y, d.Σ))
 end
 
-# Positions and weights for Gauss-Hermite quadrature
-N = 3
-(X, W) = gausshermite(N)
-sqrtPi = sqrt(pi)
-precomputedWeights = W / sqrtPi
++(x::Real, y::RandomVariable) = y + x
+-(x::RandomVariable, y::Real) = x + (-y)
+-(x::Real, y::RandomVariable) = (-y) + x
 
-function *(a::Normal, b::Normal)
-    rs = v -> reshape(v, (N, 1))
+function *(x::RandomVariable, y::Real)
+    if y == 0
+        0
+    else
+        d = x.distribution
 
-    t = sqrt(2 * b.σ) * X + b.μ
-    μ = rs(t * a.μ)
-    σ = rs((t .* t) * a.σ)
-
-    GMM(precomputedWeights, μ, σ, [], 0)
+        RandomVariable(GMM(d.w, y * d.μ, y^2 * d.Σ))
+    end
 end
 
-function /(a::Normal, b::Normal)
-    rs = v -> reshape(v, (N, 1))
-
-    t = sqrt(2 * b.σ) * X + b.μ
-    μ = rs(t * (1 / a.μ))
-    σ = rs((t .* t) * (1 / a.σ))
-
-    GMM(precomputedWeights, μ, σ, [], 0)
-end
+*(x::Real, y::RandomVariable) = y * x
+/(x::RandomVariable, y::Real) = x * (1 / y)
 
 end
