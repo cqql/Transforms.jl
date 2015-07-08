@@ -107,4 +107,23 @@ function *(x::RandomVariable, y::RandomVariable)
     RandomVariable(Mixture{t}(cs, Categorical(prior)))
 end
 
+function /(x::RandomVariable, y::RandomVariable)
+    dx = x.distribution
+    dy = y.distribution
+
+    # Weights if the components were not mixtures themselves
+    basicPrior = vec(probs(dx) * probs(dy)')
+
+    # Components approximated by mixtures
+    mixtures = vec([/(x.alg, i, j) for i = components(dx), j = components(dy)])
+
+    prior = vcat([basicPrior[i] * probs(mixtures[i]) for i = 1:length(mixtures)]...)
+    cs = vcat(map(components, mixtures)...)
+
+    # The type of the resulting components
+    t = typeof(cs[1])
+
+    RandomVariable(Mixture{t}(cs, Categorical(prior)))
+end
+
 end

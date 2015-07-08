@@ -25,3 +25,11 @@ function *(params::GaussHermiteQuadrature, x::Normal, y::Normal)
 
     Mixture{Normal}(normals, Categorical(params.W / sqrt(pi)))
 end
+
+function /(params::GaussHermiteQuadrature, x::Normal, y::Normal)
+    normals = [Normal(x.μ / (sqrt(2 * y.σ) * ξ + y.μ),
+                      x.σ / (sqrt(2 * y.σ) * ξ + y.μ)^2)
+               for ξ = params.X]
+
+    Mixture{Normal}(normals, Categorical(params.W / sqrt(pi)))
+end
