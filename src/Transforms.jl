@@ -1,6 +1,7 @@
 module Transforms
 
 import Distributions: Distribution, Univariate, Continuous, MixtureModel, components, probs, component_type, Categorical, mean
+import GaussianMixtures: GMM, em!
 
 include("integration.jl")
 include("integration/gauss-hermite.jl")
@@ -32,6 +33,22 @@ end
 "Construct a random variable with a default integration algorithm."
 function RandomVariable(distribution::Mixture)
     RandomVariable(distribution, GaussHermiteQuadrature(5))
+end
+
+"Approximate an arbitrary distribution with a mixture of Gaussians."
+function RandomVariable(distribution::Distribution,
+                        samples::Integer, components::Integer)
+    # Dimensionality of samples
+    d = length(distribution)
+
+    samples = rand(distribution, samples)
+    samples = reshape(samples, (length(samples), d))
+    gmm = GMM(components, d)
+    em!(gmm, samples)
+
+    normals = [Normal(gmm.μ[i], gmm.Σ[i][1]) for i = 1:gmm.n]
+
+    RandomVariable(MixtureModel(normals, gmm.w))
 end
 
 function mean(x::RandomVariable)
