@@ -52,4 +52,17 @@ end
 *(x::Real, y::RandomVariable) = y * x
 /(x::RandomVariable, y::Real) = x * (1 / y)
 
+function +(x::RandomVariable, y::RandomVariable)
+    dx = x.distribution
+    dy = y.distribution
+
+    w = vec(dx.w * dy.w')
+    μ = float(vec([dx.μ[i] + dy.μ[j] for i = 1:dx.n, j = 1:dy.n]))
+    Σ = float(vec([dx.Σ[i] + dy.Σ[j] for i = 1:dx.n, j = 1:dy.n]))
+
+    RandomVariable(GMM(w, μ, Σ))
+end
+
+-(x::RandomVariable, y::RandomVariable) = x + (-y)
+
 end
