@@ -55,57 +55,53 @@ function mean(x::RandomVariable)
     mean(x.distribution)
 end
 
-function -(x::RandomVariable)
+"Transform a random variable with a monadic function."
+function monadictransform(op::Function, x::RandomVariable)
     d = x.distribution
 
-    RandomVariable(Mixture{component_type(d)}(map(-, components(d)), d.prior),
+    RandomVariable(Mixture{component_type(d)}(map(op, components(d)), d.prior),
                    x.alg)
 end
 
-function +(x::RandomVariable, y::Real)
-    d = x.distribution
-    f = X -> X + y
+-(x::RandomVariable) = monadictransform(-, x)
 
-    RandomVariable(Mixture{component_type(d)}(map(f, components(d)), d.prior),
-                   x.alg)
-end
-
++(x::RandomVariable, y::Real) = monadictransform(X -> X + y, x)
 +(x::Real, y::RandomVariable) = y + x
 -(x::RandomVariable, y::Real) = x + (-y)
 -(x::Real, y::RandomVariable) = (-y) + x
 
-function *(x::RandomVariable, y::Real)
-    if y == 0
-        0
-    else
-        d = x.distribution
-        f = X -> X * y
-
-        RandomVariable(Mixture{component_type(d)}(map(f, components(d)),
-                                                  d.prior),
-                       x.alg)
-    end
-end
-
+*(x::RandomVariable, y::Real) = y == 0 ? 0 : monadictransform(X -> X * y, x)
 *(x::Real, y::RandomVariable) = y * x
 /(x::RandomVariable, y::Real) = x * (1 / y)
 
-function +(x::RandomVariable, y::RandomVariable)
+"Transform two random variables with a diadic function."
+function diadictransform(op::Function, x::RandomVariable, y::RandomVariable)
     dx = x.distribution
     dy = y.distribution
 
     prior = vec(probs(dx) * probs(dy)')
-    cs = vec([i + j for i = components(dx), j = components(dy)])
+    cs = vec([op(i, j) for i = components(dx), j = components(dy)])
 
     # The type of the resulting components
     t = typeof(cs[1])
 
+    # Cast from Vector{Any} to Vector{t}
+    cs = t[c for c = cs]
+
     RandomVariable(Mixture{t}(cs, Categorical(prior)))
 end
 
++(x::RandomVariable, y::RandomVariable) = diadictransform(+, x, y)
 -(x::RandomVariable, y::RandomVariable) = x + (-y)
 
-function *(x::RandomVariable, y::RandomVariable)
+"""
+Transform two random variables with a diadic function.
+
+Use this instead of #{diadictransform}, if op already returns a mixture
+distribution.
+"""
+function diadicmixturetransform(op::Function,
+                                x::RandomVariable, y::RandomVariable)
     dx = x.distribution
     dy = y.distribution
 
@@ -113,7 +109,7 @@ function *(x::RandomVariable, y::RandomVariable)
     basicPrior = vec(probs(dx) * probs(dy)')
 
     # Components approximated by mixtures
-    mixtures = vec([*(x.alg, i, j) for i = components(dx), j = components(dy)])
+    mixtures = vec([op(x.alg, i, j) for i = components(dx), j = components(dy)])
 
     prior = vcat([basicPrior[i] * probs(mixtures[i]) for i = 1:length(mixtures)]...)
     cs = vcat(map(components, mixtures)...)
@@ -124,23 +120,7 @@ function *(x::RandomVariable, y::RandomVariable)
     RandomVariable(Mixture{t}(cs, Categorical(prior)))
 end
 
-function /(x::RandomVariable, y::RandomVariable)
-    dx = x.distribution
-    dy = y.distribution
-
-    # Weights if the components were not mixtures themselves
-    basicPrior = vec(probs(dx) * probs(dy)')
-
-    # Components approximated by mixtures
-    mixtures = vec([/(x.alg, i, j) for i = components(dx), j = components(dy)])
-
-    prior = vcat([basicPrior[i] * probs(mixtures[i]) for i = 1:length(mixtures)]...)
-    cs = vcat(map(components, mixtures)...)
-
-    # The type of the resulting components
-    t = typeof(cs[1])
-
-    RandomVariable(Mixture{t}(cs, Categorical(prior)))
-end
+*(x::RandomVariable, y::RandomVariable) = diadicmixturetransform(*, x, y)
+/(x::RandomVariable, y::RandomVariable) = diadicmixturetransform(/, x, y)
 
 end
