@@ -1,6 +1,7 @@
 # Implement basic arithmetic on normal distributions
 
 import Distributions: Normal
+import CurveFit: linear_fit
 
 function -(x::Normal)
     Normal(-x.μ, x.σ)
@@ -24,6 +25,30 @@ function *(params::GaussHermiteQuadrature, x::Normal, y::Normal)
                for ξ = params.X]
 
     Mixture{Normal}(normals, Categorical(params.W / sqrt(pi)))
+end
+
+function *(params::FlattenedGaussHermiteQuadrature, x::Normal, y::Normal)
+    mixture = *(params.ghparams, x, y)
+    cs = components(mixture)
+    n = length(cs)
+    tenpercent = int(0.1 * n)
+    range = tenpercent:(n - tenpercent)
+
+    a, b = linear_fit(range, log(map(var, cs[range])))
+    f(x) = a + b * x
+
+    function flatten(d::Normal)
+        if d.σ < params.ϵ
+            Normal(d.μ, 1)
+        else
+            d
+        end
+    end
+
+    prior = mixture.prior
+    cs = map(flatten, cs)
+
+    Mixture{Normal}(cs, prior)
 end
 
 function /(params::GaussHermiteQuadrature, x::Normal, y::Normal)
