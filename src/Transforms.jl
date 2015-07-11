@@ -1,6 +1,6 @@
 module Transforms
 
-import Distributions: Distribution, Univariate, Continuous, MixtureModel, components, probs, component_type, Categorical, mean
+import Distributions: Distribution, Univariate, Continuous, MixtureModel, components, probs, component_type, Categorical, mean, var
 import GaussianMixtures: GMM, em!
 
 include("integration.jl")
@@ -56,6 +56,10 @@ end
 
 function mean(x::RandomVariable)
     mean(x.distribution)
+end
+
+function var(x::RandomVariable)
+    var(x.distribution)
 end
 
 "Transform a random variable with a monadic function."
