@@ -6,6 +6,7 @@ import GaussianMixtures: GMM, em!
 include("integration.jl")
 include("integration/gauss-hermite.jl")
 include("integration/flattened-gauss-hermite.jl")
+include("integration/gauss-laguerre.jl")
 
 include("components/normal.jl")
 

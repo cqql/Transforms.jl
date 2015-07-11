@@ -51,6 +51,42 @@ function *(params::FlattenedGaussHermiteQuadrature, x::Normal, y::Normal)
     Mixture{Normal}(cs, prior)
 end
 
+function *(p::GaussLaguerreQuadrature, x::Normal, y::Normal)
+    n, W, X, ϵ = p.n, p.W, p.X, p.ϵ
+    μ, σ2 = x.μ, x.σ
+    ν, τ2 = y.μ, y.σ
+
+    # Constants and formulas for parameters for the left sum
+    lS = (ϵ + ν)^2
+    lT = lS / (2 * τ2)
+    lnumerator = exp(-lT)
+    lw(w, x) = w * lnumerator / (2 * sqrt(pi * (x + lT)))
+    lμ(x) = -(sqrt(2 * τ2 * x + lS) - ν) * μ
+    lσ(x) = (sqrt(2 * τ2 * x + lS) - ν) * σ2
+
+    lWeights = Float64[lw(W[i], X[i]) for i = 1:n]
+    lComponents = Normal[Normal(lμ(x), lσ(x)) for x = X]
+
+    # Constants and formulas for parameters for the left sum
+    lS = (ϵ - ν)^2
+    lT = lS / (2 * τ2)
+    lnumerator = exp(-lT)
+    rw(w, x) = w * lnumerator / (2 * sqrt(pi * (x + lT)))
+    rμ(x) = -(sqrt(2 * τ2 * x + lS) + ν) * μ
+    rσ(x) = (sqrt(2 * τ2 * x + lS) + ν) * σ2
+
+    rWeights = Float64[rw(W[i], X[i]) for i = 1:n]
+    rComponents = Normal[Normal(rμ(x), rσ(x)) for x = X]
+
+    w = [lWeights, rWeights]
+    c = [lComponents, rComponents]
+
+    # Normalize the weights to 1
+    w = w / sum(w)
+
+    Mixture{Normal}(c, Categorical(w))
+end
+
 function /(params::GaussHermiteQuadrature, x::Normal, y::Normal)
     normals = [Normal(x.μ / (sqrt(2 * y.σ) * ξ + y.μ),
                       x.σ / (sqrt(2 * y.σ) * ξ + y.μ)^2)
