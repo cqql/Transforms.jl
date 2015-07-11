@@ -7,6 +7,7 @@ include("integration.jl")
 include("integration/gauss-hermite.jl")
 include("integration/flattened-gauss-hermite.jl")
 include("integration/gauss-laguerre.jl")
+include("integration/exp-var.jl")
 
 include("components/normal.jl")
 

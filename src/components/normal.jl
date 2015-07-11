@@ -87,6 +87,13 @@ function *(p::GaussLaguerreQuadrature, x::Normal, y::Normal)
     Mixture{Normal}(c, Categorical(w))
 end
 
+function *(params::ExpVar, x::Normal, y::Normal)
+    μ = x.μ * y.μ
+    σ = x.σ * y.σ + x.μ^2 * y.σ + y.μ^2 * x.σ
+
+    Mixture{Normal}([Normal(μ, σ)], Categorical([1.0]))
+end
+
 function /(params::GaussHermiteQuadrature, x::Normal, y::Normal)
     normals = [Normal(x.μ / (sqrt(2 * y.σ) * ξ + y.μ),
                       x.σ / (sqrt(2 * y.σ) * ξ + y.μ)^2)
