@@ -16,9 +16,10 @@ plot(X, pdf(y.distribution, X), label="y", lw=2)
 
 for i = 1:5
     n = i * 400
+    alg = Transforms.GaussHermiteQuadrature(n)
 
-    x = Transforms.RandomVariable(xmodel, Transforms.GaussHermiteQuadrature(n))
-    y = Transforms.RandomVariable(ymodel, Transforms.GaussHermiteQuadrature(n))
+    x = Transforms.RandomVariable(xmodel, alg)
+    y = Transforms.RandomVariable(ymodel, alg)
 
     plot(X, pdf((x * y).distribution, X), label="$n components", lw=i)
 end
