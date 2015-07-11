@@ -90,7 +90,7 @@ function diadictransform(op::Function, x::RandomVariable, y::RandomVariable)
     # Cast from Vector{Any} to Vector{t}
     cs = t[c for c = cs]
 
-    RandomVariable(Mixture{t}(cs, Categorical(prior)))
+    RandomVariable(Mixture{t}(cs, Categorical(prior)), x.alg)
 end
 
 +(x::RandomVariable, y::RandomVariable) = diadictransform(+, x, y)
@@ -119,7 +119,7 @@ function diadicmixturetransform(op::Function,
     # The type of the resulting components
     t = typeof(cs[1])
 
-    RandomVariable(Mixture{t}(cs, Categorical(prior)))
+    RandomVariable(Mixture{t}(cs, Categorical(prior)), x.alg)
 end
 
 *(x::RandomVariable, y::RandomVariable) = diadicmixturetransform(*, x, y)
