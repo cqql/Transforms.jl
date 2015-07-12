@@ -96,8 +96,8 @@ function *(params::ExpVar, x::Normal, y::Normal)
 end
 
 function /(params::GaussHermiteQuadrature, x::Normal, y::Normal)
-    normals = [Normal(x.μ / (sqrt(2 * y.σ) * ξ + y.μ),
-                      x.σ / (sqrt(2 * y.σ) * ξ + y.μ)^2)
+    normals = [Normal(x.μ / (sqrt(2) * y.σ * ξ + y.μ),
+                      abs(x.σ / (sqrt(2) * y.σ * ξ + y.μ)))
                for ξ = params.X]
 
     Mixture{Normal}(normals, Categorical(params.W / sqrt(pi)))
