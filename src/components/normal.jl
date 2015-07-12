@@ -12,7 +12,7 @@ function +(x::Normal, y::Real)
 end
 
 function *(x::Normal, y::Real)
-    Normal(y * x.μ, y^2 * x.σ)
+    Normal(y * x.μ, y * x.σ)
 end
 
 function +(x::Normal, y::Normal)
@@ -20,8 +20,9 @@ function +(x::Normal, y::Normal)
 end
 
 function *(params::GaussHermiteQuadrature, x::Normal, y::Normal)
-    normals = [Normal((sqrt(2 * y.σ) * ξ + y.μ) * x.μ,
-                      (sqrt(2 * y.σ) * ξ + y.μ)^2 * x.σ)
+    t = sqrt(2) * y.σ
+    normals = [Normal((t * ξ + y.μ) * x.μ,
+                      abs(t * ξ + y.μ) * x.σ)
                for ξ = params.X]
 
     Mixture{Normal}(normals, Categorical(params.W / sqrt(pi)))
@@ -53,8 +54,8 @@ end
 
 function *(p::GaussLaguerreQuadrature, x::Normal, y::Normal)
     n, W, X, ϵ = p.n, p.W, p.X, p.ϵ
-    μ, σ2 = x.μ, x.σ
-    ν, τ2 = y.μ, y.σ
+    μ, σ2 = x.μ, x.σ^2
+    ν, τ2 = y.μ, y.σ^2
 
     # Constants and formulas for parameters for the left sum
     lS = (ϵ + ν)^2
@@ -89,9 +90,9 @@ end
 
 function *(params::ExpVar, x::Normal, y::Normal)
     μ = x.μ * y.μ
-    σ = x.σ * y.σ + x.μ^2 * y.σ + y.μ^2 * x.σ
+    σ2 = x.σ^2 * y.σ^2 + x.μ^2 * y.σ^2 + y.μ^2 * x.σ^2
 
-    Mixture{Normal}([Normal(μ, σ)], Categorical([1.0]))
+    Mixture{Normal}([Normal(μ, sqrt(σ2))], Categorical([1.0]))
 end
 
 function /(params::GaussHermiteQuadrature, x::Normal, y::Normal)
