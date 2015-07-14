@@ -47,10 +47,9 @@ function RandomVariable(distribution::Distribution,
 
     samples = rand(distribution, samples)
     samples = reshape(samples, (length(samples), d))
-    gmm = GMM(components, d)
-    em!(gmm, samples)
+    gmm = GMM(components, samples)
 
-    normals = [Normal(gmm.μ[i], gmm.Σ[i][1]) for i = 1:gmm.n]
+    normals = [Normal(gmm.μ[i], sqrt(gmm.Σ[i][1])) for i = 1:gmm.n]
 
     # Sometimes the weights do not sum exactly to 1, because of floating point
     # errors, so we normalize them to make sure
