@@ -1,7 +1,6 @@
 module Transforms
 
 import Distributions: Distribution, Univariate, Continuous, MixtureModel, components, probs, component_type, Categorical, mean, var
-import GaussianMixtures: GMM, em!
 
 include("integration.jl")
 include("integration/gauss-hermite.jl")
@@ -10,6 +9,8 @@ include("integration/gauss-laguerre.jl")
 include("integration/exp-var.jl")
 
 include("components/normal.jl")
+
+include("em.jl")
 
 "The special case of mixture models, that we work with."
 typealias Mixture{T<:Distribution} MixtureModel{Univariate, Continuous, T}
@@ -42,20 +43,10 @@ end
 function RandomVariable(distribution::Distribution,
                         samples::Integer, components::Integer,
                         alg::IntegrationAlgorithm=GaussHermiteQuadrature(5))
-    # Dimensionality of samples
-    d = length(distribution)
-
     samples = rand(distribution, samples)
-    samples = reshape(samples, (length(samples), d))
-    gmm = GMM(components, samples)
+    mixture = EM!(samples, components)
 
-    normals = [Normal(gmm.μ[i], sqrt(gmm.Σ[i][1])) for i = 1:gmm.n]
-
-    # Sometimes the weights do not sum exactly to 1, because of floating point
-    # errors, so we normalize them to make sure
-    w = gmm.w / sum(gmm.w)
-
-    RandomVariable(MixtureModel(normals, w), alg)
+    RandomVariable(mixture, alg)
 end
 
 function mean(x::RandomVariable)
