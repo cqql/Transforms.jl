@@ -40,7 +40,8 @@ end
 
 "Approximate an arbitrary distribution with a mixture of Gaussians."
 function RandomVariable(distribution::Distribution,
-                        samples::Integer, components::Integer)
+                        samples::Integer, components::Integer,
+                        alg::IntegrationAlgorithm=GaussHermiteQuadrature(5))
     # Dimensionality of samples
     d = length(distribution)
 
@@ -51,7 +52,11 @@ function RandomVariable(distribution::Distribution,
 
     normals = [Normal(gmm.μ[i], gmm.Σ[i][1]) for i = 1:gmm.n]
 
-    RandomVariable(MixtureModel(normals, gmm.w))
+    # Sometimes the weights do not sum exactly to 1, because of floating point
+    # errors, so we normalize them to make sure
+    w = gmm.w / sum(gmm.w)
+
+    RandomVariable(MixtureModel(normals, w), alg)
 end
 
 function mean(x::RandomVariable)
