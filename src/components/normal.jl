@@ -54,8 +54,8 @@ end
 
 function *(p::GaussLaguerreQuadrature, x::Normal, y::Normal)
     n, W, X, ϵ = p.n, p.W, p.X, p.ϵ
-    μ, σ2 = x.μ, x.σ^2
-    ν, τ2 = y.μ, y.σ^2
+    μ, σ, σ2 = x.μ, x.σ, x.σ^2
+    ν, τ, τ2 = y.μ, y.σ, y.σ^2
 
     # Constants and formulas for parameters for the left sum
     lS = (ϵ + ν)^2
@@ -63,18 +63,18 @@ function *(p::GaussLaguerreQuadrature, x::Normal, y::Normal)
     lnumerator = exp(-lT)
     lw(w, x) = w * lnumerator / (2 * sqrt(pi * (x + lT)))
     lμ(x) = -(sqrt(2 * τ2 * x + lS) - ν) * μ
-    lσ(x) = (sqrt(2 * τ2 * x + lS) - ν) * σ2
+    lσ(x) = (sqrt(2 * τ2 * x + lS) - ν) * σ
 
     lWeights = Float64[lw(W[i], X[i]) for i = 1:n]
     lComponents = Normal[Normal(lμ(x), lσ(x)) for x = X]
 
-    # Constants and formulas for parameters for the left sum
-    lS = (ϵ - ν)^2
-    lT = lS / (2 * τ2)
-    lnumerator = exp(-lT)
-    rw(w, x) = w * lnumerator / (2 * sqrt(pi * (x + lT)))
-    rμ(x) = -(sqrt(2 * τ2 * x + lS) + ν) * μ
-    rσ(x) = (sqrt(2 * τ2 * x + lS) + ν) * σ2
+    # Constants and formulas for parameters for the right sum
+    rS = (ϵ - ν)^2
+    rT = rS / (2 * τ2)
+    rnumerator = exp(-rT)
+    rw(w, x) = w * rnumerator / (2 * sqrt(pi * (x + rT)))
+    rμ(x) = (sqrt(2 * τ2 * x + rS) + ν) * μ
+    rσ(x) = (sqrt(2 * τ2 * x + rS) + ν) * σ
 
     rWeights = Float64[rw(W[i], X[i]) for i = 1:n]
     rComponents = Normal[Normal(rμ(x), rσ(x)) for x = X]
