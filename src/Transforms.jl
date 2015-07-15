@@ -1,6 +1,7 @@
 module Transforms
 
-import Distributions: Distribution, Univariate, Continuous, MixtureModel, components, probs, component_type, Categorical, mean, var
+import Distributions: Distribution, Univariate, Continuous, MixtureModel,
+components, probs, component_type, Categorical, mean, var
 
 include("integration.jl")
 include("integration/gauss-hermite.jl")
