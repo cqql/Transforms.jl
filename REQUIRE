@@ -6,3 +6,4 @@ Distributions 0.6
 
 # Integral approximation
 FastGaussQuadrature
+GaussQuadrature
