@@ -8,7 +8,7 @@ function p(x::Float64, μ::Float64, σ2::Float64)
     exp(-(x - μ)^2 / (2 * σ2)) / (S2PI * sqrt(σ2))
 end
 
-function EM!(X::Vector{Float64}, n::Integer, iters::Integer=20)
+function EM!(X::Vector{Float64}, n::Integer, iters::Integer=100)
     N = length(X)
 
     # Guess initial model parameters
@@ -41,10 +41,6 @@ function EM!(X::Vector{Float64}, n::Integer, iters::Integer=20)
         nπ = rk / N
         nμ = [dot(r[:, k], X) for k = 1:n] ./ rk
         nσ2 = [dot(r[:, k], X2) for k = 1:n] ./ rk - μ.^2
-
-        # Variance flooring
-        toosmall = find(σ -> σ < 0.01, nσ2)
-        nσ2[toosmall] = iσ2[toosmall]
 
         π, μ, σ2 = nπ, nμ, nσ2
     end
