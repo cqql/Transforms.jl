@@ -28,30 +28,6 @@ function *(params::GaussHermiteQuadrature, x::Normal, y::Normal)
     Mixture{Normal}(normals, Categorical(params.W / sqrt(pi)))
 end
 
-function *(params::FlattenedGaussHermiteQuadrature, x::Normal, y::Normal)
-    mixture = *(params.ghparams, x, y)
-    cs = components(mixture)
-    n = length(cs)
-    tenpercent = int(0.1 * n)
-    range = tenpercent:(n - tenpercent)
-
-    a, b = linear_fit(range, log(map(var, cs[range])))
-    f(x) = a + b * x
-
-    function flatten(d::Normal)
-        if d.σ < params.ϵ
-            Normal(d.μ, 1)
-        else
-            d
-        end
-    end
-
-    prior = mixture.prior
-    cs = map(flatten, cs)
-
-    Mixture{Normal}(cs, prior)
-end
-
 function *(p::GaussLaguerreQuadrature, x::Normal, y::Normal)
     n, W, X, ϵ = p.n, p.W, p.X, p.ϵ
     μ, σ, σ2 = x.μ, x.σ, x.σ^2
@@ -86,13 +62,6 @@ function *(p::GaussLaguerreQuadrature, x::Normal, y::Normal)
     w = w / sum(w)
 
     Mixture{Normal}(c, Categorical(w))
-end
-
-function *(params::ExpVar, x::Normal, y::Normal)
-    μ = x.μ * y.μ
-    σ2 = x.σ^2 * y.σ^2 + x.μ^2 * y.σ^2 + y.μ^2 * x.σ^2
-
-    Mixture{Normal}([Normal(μ, sqrt(σ2))], Categorical([1.0]))
 end
 
 function /(params::GaussHermiteQuadrature, x::Normal, y::Normal)
