@@ -4,6 +4,9 @@ julia 0.3
 # Use this for all our distribution needs
 Distributions 0.6
 
+# Sample statistics
+StatsBase
+
 # Integral approximation
 FastGaussQuadrature
 GaussQuadrature
