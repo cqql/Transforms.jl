@@ -4,19 +4,14 @@ import Distributions: Distribution, Univariate, Continuous, MixtureModel,
 components, probs, component_type, Categorical, mean, var
 
 include("integration.jl")
-include("integration/gauss-hermite.jl")
-include("integration/gauss-laguerre.jl")
+include("em.jl")
 
 include("components/normal.jl")
-
-include("em.jl")
 
 "The special case of mixture models, that we work with."
 typealias Mixture{T<:Distribution} MixtureModel{Univariate, Continuous, T}
 
-"""
-A random variable to do computations with
-"""
+"A random variable with integration parameters."
 immutable RandomVariable{Component<:Distribution, T<:IntegrationAlgorithm}
     distribution::Mixture{Component}
     alg::T
