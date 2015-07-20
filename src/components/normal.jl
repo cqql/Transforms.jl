@@ -16,7 +16,7 @@ function *(x::Normal, y::Real)
 end
 
 function +(x::Normal, y::Normal)
-    Normal(x.μ + y.μ, x.σ + y.σ)
+    Normal(x.μ + y.μ, sqrt(x.σ^2 + y.σ^2))
 end
 
 function *(params::GaussHermiteQuadrature, x::Normal, y::Normal)
