@@ -8,7 +8,7 @@ function p(x::Float64, μ::Float64, σ2::Float64)
     exp(-(x - μ)^2 / (2 * σ2)) / (S2PI * sqrt(σ2))
 end
 
-function EM!(X::Vector{Float64}, n::Integer, iters::Integer=100)
+function EM!(X::Vector{Float64}, n::Integer, iters::Integer=20)
     N = length(X)
 
     # Guess initial model parameters
@@ -22,9 +22,6 @@ function EM!(X::Vector{Float64}, n::Integer, iters::Integer=100)
     π::Vector{Float64} = [1 / n for i = 1:n]
     μ::Vector{Float64} = iμ
     σ2::Vector{Float64} = iσ2
-
-    # Cache this
-    const X2::Vector{Float64} = X.^2
 
     for j = 1:iters
         # E step
@@ -40,7 +37,7 @@ function EM!(X::Vector{Float64}, n::Integer, iters::Integer=100)
         rk = [sum(r[:, k]) for k = 1:n]
         nπ = rk / N
         nμ = [dot(r[:, k], X) for k = 1:n] ./ rk
-        nσ2 = [dot(r[:, k], X2) for k = 1:n] ./ rk - μ.^2
+        nσ2 = [dot(r[:, k], (X - μ[k]).^2) for k = 1:n] ./ rk
 
         π, μ, σ2 = nπ, nμ, nσ2
     end
